@@ -159,8 +159,9 @@ const activityBars = eventCounts.map((count, index) => {
 const repoRowCount = Math.max(1, featured.length);
 const repoStart = 1092;
 const careerTitleY = repoStart + repoRowCount * 126 + 18;
-const careerStart = careerTitleY + 42;
-const techTitleY = careerStart + career.length * 126 + 70;
+const careerStart = careerTitleY + 46;
+const careerRowHeight = 132;
+const techTitleY = careerStart + career.length * careerRowHeight + 70;
 const techGridStart = techTitleY + 47;
 const skillsStart = techGridStart + 6 * 70 + 20;
 const heatTitleY = skillsStart + 6 * 48 + 20;
@@ -183,25 +184,26 @@ const repoCards = (featured.length ? featured : [{ name: "NO PUBLIC BUILDS YET",
   }).join("");
 
 const logoMarkup = (domain, x, y, fallback) => {
+  const size = 42;
   const brandLogo = brandLogos.get(domain);
-  if (brandLogo) return `<image href="${brandLogo}" x="${x}" y="${y}" width="34" height="34" preserveAspectRatio="xMidYMid meet"/>`;
+  if (brandLogo) return `<image href="${brandLogo}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet" filter="url(#soft)"/>`;
   const logo = companyLogos.get(domain);
   return logo
-    ? `<rect x="${x}" y="${y}" width="34" height="34" rx="9" fill="#fff"/><image href="data:image/png;base64,${logo}" x="${x + 5}" y="${y + 5}" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>`
-    : `<rect x="${x}" y="${y}" width="34" height="34" rx="9" fill="#3157FF"/><text x="${x + 17}" y="${y + 22}" text-anchor="middle" fill="#fff" class="micro">${xml(fallback.slice(0, 2).toUpperCase())}</text>`;
+    ? `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="11" fill="#fff" filter="url(#soft)"/><image href="data:image/png;base64,${logo}" x="${x + 6}" y="${y + 6}" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>`
+    : `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="11" fill="#3157FF" filter="url(#soft)"/><text x="${x + size / 2}" y="${y + 27}" text-anchor="middle" fill="#fff" class="small">${xml(fallback.slice(0, 2).toUpperCase())}</text>`;
 };
 
 const careerTimeline = career.map(([period, company, client, role, summary, employerDomain, clientDomains], index) => {
-  const y = careerStart + index * 126;
+  const y = careerStart + index * careerRowHeight;
   const split = summary.length > 94 ? summary.lastIndexOf(" ", 94) : -1;
   const firstLine = split > 0 ? summary.slice(0, split) : summary;
   const secondLine = split > 0 ? summary.slice(split + 1) : "";
-  const clientIcons = clientDomains.map((domain, logoIndex) => logoMarkup(domain, 920 + logoIndex * 40, -10, client)).join("");
+  const clientIcons = clientDomains.map((domain, logoIndex) => logoMarkup(domain, 910 + logoIndex * 50, -14, client)).join("");
   return `<g transform="translate(42 ${y})">
-    <circle cx="8" cy="15" r="7" fill="#F7F6EF" stroke="#3157FF" stroke-width="3"><animate attributeName="r" values="6;9;6" dur="3s" begin="${index * .2}s" repeatCount="indefinite"/></circle><path d="M8 22V126" stroke="#3157FF" stroke-opacity=".28"/>
-    <text x="34" y="19" class="small blue">${xml(period)}</text>${logoMarkup(employerDomain, 190, -10, company)}<text x="234" y="19" class="repo ink">${xml(company)}</text>
+    <circle cx="8" cy="15" r="7" fill="#F7F6EF" stroke="#3157FF" stroke-width="3"><animate attributeName="r" values="6;9;6" dur="3s" begin="${index * .2}s" repeatCount="indefinite"/></circle><path d="M8 22V${careerRowHeight}" stroke="#3157FF" stroke-opacity=".28"/>
+    <text x="34" y="19" class="small blue">${xml(period)}</text>${logoMarkup(employerDomain, 190, -14, company)}<text x="244" y="19" class="repo ink">${xml(company)}</text>
     ${clientIcons}<text x="1116" y="45" text-anchor="end" class="micro blue">CLIENT · ${xml(client)}</text>
-    <text x="234" y="45" class="small muted">${xml(role)}</text><text x="190" y="75" class="body ink">${xml(firstLine)}</text>${secondLine ? `<text x="190" y="98" class="body ink">${xml(secondLine)}</text>` : ""}
+    <text x="244" y="46" class="small muted">${xml(role)}</text><text x="190" y="79" class="body ink">${xml(firstLine)}</text>${secondLine ? `<text x="190" y="104" class="body ink">${xml(secondLine)}</text>` : ""}
   </g>`;
 }).join("");
 
@@ -254,8 +256,8 @@ const svg = `<svg width="1200" height="${height}" viewBox="0 0 1200 ${height}" x
   <filter id="soft" x="-15%" y="-25%" width="130%" height="150%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#6876AA" flood-opacity=".16"/><feDropShadow dx="-2" dy="-2" stdDeviation="3" flood-color="#FFFFFF" flood-opacity=".9"/></filter>
   <style>
     text{font-family:Courier,monospace}.display{font-family:Verdana,sans-serif;font-weight:900}.ink{fill:#152033}.blue{fill:#3157FF}.muted{fill:#667085}
-    .label{font-size:13px;font-weight:700;letter-spacing:2px}.micro{font-size:10px;font-weight:700;letter-spacing:1px}.small{font-size:12px;font-weight:700;letter-spacing:.7px}
-    .body{font-size:14px}.metric{font-family:Verdana,sans-serif;font-size:42px;font-weight:900}.repo{font-size:19px;font-weight:700}
+    .label{font-size:14px;font-weight:700;letter-spacing:2px}.micro{font-size:11px;font-weight:700;letter-spacing:.85px}.small{font-size:13px;font-weight:700;letter-spacing:.65px}
+    .body{font-size:15px}.metric{font-family:Verdana,sans-serif;font-size:44px;font-weight:900}.repo{font-size:20px;font-weight:700}
   </style>
 </defs>
 <rect width="1200" height="${height}" rx="24" fill="url(#paper)"/><rect width="1200" height="${height}" rx="24" fill="url(#dots)"/>
