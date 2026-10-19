@@ -92,6 +92,13 @@ const iconData = new Map(await Promise.all(techCatalog.map(async ([name, slug, f
 })));
 
 const logoDomains = [...new Set(career.flatMap(([, , , , , employerDomain, clientDomains]) => [employerDomain, ...clientDomains]).filter((domain) => domain.includes(".")))];
+const brandLogoFiles = new Map([
+  ["qualityai", "assets/quality-ai-mark.svg"],
+]);
+const brandLogos = new Map(await Promise.all([...brandLogoFiles].map(async ([brand, path]) => [
+  brand,
+  `data:image/svg+xml;base64,${(await readFile(path)).toString("base64")}`,
+])));
 const companyLogos = new Map(await Promise.all(logoDomains.map(async (domain) => {
   try {
     const response = await fetch(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`);
@@ -176,6 +183,8 @@ const repoCards = (featured.length ? featured : [{ name: "NO PUBLIC BUILDS YET",
   }).join("");
 
 const logoMarkup = (domain, x, y, fallback) => {
+  const brandLogo = brandLogos.get(domain);
+  if (brandLogo) return `<image href="${brandLogo}" x="${x}" y="${y}" width="34" height="34" preserveAspectRatio="xMidYMid meet"/>`;
   const logo = companyLogos.get(domain);
   return logo
     ? `<rect x="${x}" y="${y}" width="34" height="34" rx="9" fill="#fff"/><image href="data:image/png;base64,${logo}" x="${x + 5}" y="${y + 5}" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>`
