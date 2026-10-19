@@ -3,7 +3,8 @@ name: Refresh profile intelligence
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "7,22,37,52 * * * *"
+    - cron: "17 0 * * *"
   push:
     branches: [main]
     paths:
@@ -16,6 +17,7 @@ permissions:
 jobs:
   repositories:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,6 +37,7 @@ jobs:
           git push
 
   contribution-snake:
+    if: github.event_name != 'schedule' || github.event.schedule == '17 0 * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: Platane/snk/svg-only@v3

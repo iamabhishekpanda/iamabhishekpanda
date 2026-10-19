@@ -8,9 +8,7 @@
 -->
 
 <div align="center">
-  <a href="https://www.abhishekpanda.com">
-    <img src="./assets/abhishek-panda-portfolio.svg" width="100%" alt="Abhishek Panda — AI Architect portfolio, career history, public engineering metrics, technology distribution, and repositories" />
-  </a>
+  <img src="./assets/abhishek-panda-portfolio.svg" width="100%" alt="Abhishek Panda — AI Architect portfolio, career history, public engineering metrics, technology distribution, and repositories" />
   <br /><br />
   <a href="https://www.abhishekpanda.com"><img src="https://cdn.simpleicons.org/safari/3157FF" width="30" height="30" alt="Portfolio" /></a>
   &nbsp;&nbsp;&nbsp;
@@ -19,4 +17,8 @@
   <a href="https://substack.com/@iamabhishekpanda"><img src="https://cdn.simpleicons.org/substack/3157FF" width="30" height="30" alt="Substack" /></a>
   &nbsp;&nbsp;&nbsp;
   <a href="https://github.com/iamabhishekpanda?tab=followers"><img src="https://cdn.simpleicons.org/github/3157FF" width="30" height="30" alt="Follow on GitHub" /></a>
+</div>
+
+<div align="center">
+  <strong><a href="https://ai-ml-engineering-from-scratch.vercel.app/">ai-ml-engineering-from-scratch.vercel.app</a></strong>
 </div>

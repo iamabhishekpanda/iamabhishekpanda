@@ -14,16 +14,25 @@ const get = async (path) => {
   return response.json();
 };
 
+const getAllRepos = async () => {
+  const results = [];
+  for (let page = 1; ; page += 1) {
+    const batch = await get(`/users/${username}/repos?per_page=100&sort=pushed&page=${page}`);
+    results.push(...batch);
+    if (batch.length < 100) return results;
+  }
+};
+
 const [profile, allRepos, events] = await Promise.all([
   get(`/users/${username}`),
-  get(`/users/${username}/repos?per_page=100&sort=pushed`),
+  getAllRepos(),
   get(`/users/${username}/events/public?per_page=100`).catch(() => []),
 ]);
 
 const repos = allRepos
   .filter((repo) => !repo.fork && !repo.archived && repo.name !== profileRepo)
   .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
-const featured = [...repos].sort((a, b) => b.stargazers_count - a.stargazers_count || new Date(b.pushed_at) - new Date(a.pushed_at)).slice(0, 5);
+const featured = repos.slice(0, 5);
 const languageRepos = repos.slice(0, 20);
 const languageResults = await Promise.all(languageRepos.map((repo) => get(`/repos/${username}/${repo.name}/languages`).catch(() => ({}))));
 const repositoryTrees = await Promise.all(repos.slice(0, 12).map(async (repo) => {
@@ -262,7 +271,7 @@ const svg = `<svg width="1200" height="${height}" viewBox="0 0 1200 ${height}" x
 </g>
 <text x="780" y="580" class="label ink">PUBLIC ACTIVITY / 12 WEEKS</text><text x="1158" y="580" text-anchor="end" class="small blue">${activityStreak} WEEK STREAK</text><path d="M780 598H1158" stroke="#152033" stroke-opacity=".22"/>${activityBars}<path d="M780 744H1158" stroke="#152033" stroke-opacity=".25"/>
 <text x="42" y="866" class="label blue">LANGUAGE DISTRIBUTION / PUBLIC SOURCE</text><text x="1158" y="866" text-anchor="end" class="small muted">TOP ${topLanguages.length || 0} BY CODE SIZE</text><path d="M42 883H1158" stroke="#152033" stroke-opacity=".22"/>${languageBar}
-<text x="42" y="1042" class="label blue">SELECTED PUBLIC ENGINEERING</text><text x="1158" y="1042" text-anchor="end" class="small muted">AUTOMATICALLY RANKED BY SIGNAL + RECENCY</text><path d="M42 1060H1158" stroke="#152033" stroke-opacity=".22"/>
+<text x="42" y="1042" class="label blue">LATEST PUBLIC ENGINEERING</text><text x="1158" y="1042" text-anchor="end" class="small muted">AUTO-SYNCED BY MOST RECENT PUSH</text><path d="M42 1060H1158" stroke="#152033" stroke-opacity=".22"/>
 ${repoCards}
 <text x="42" y="${careerTitleY}" class="label blue">CAREER SYSTEMS / JUL 2015 - PRESENT</text><text x="1158" y="${careerTitleY}" text-anchor="end" class="small muted">EMPLOYER FIRST · CLIENT CONTEXT ON RIGHT</text><path d="M42 ${careerTitleY + 17}H1158" stroke="#152033" stroke-opacity=".22"/>
 ${careerTimeline}
