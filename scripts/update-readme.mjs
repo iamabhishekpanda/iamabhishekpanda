@@ -43,7 +43,7 @@ const treeEvidence = new Map(repositoryTrees);
 const languages = {};
 languageResults.forEach((result) => Object.entries(result).forEach(([name, bytes]) => { languages[name] = (languages[name] || 0) + bytes; }));
 const languageTotal = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
-const topLanguages = Object.entries(languages).sort((a, b) => b[1] - a[1]).slice(0, 6);
+const sortedLanguages = Object.entries(languages).sort((a, b) => b[1] - a[1]);
 
 const totalStars = repos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
 const totalForks = repos.reduce((sum, repo) => sum + repo.forks_count, 0);
@@ -61,6 +61,14 @@ const xml = (value = "") => String(value).replaceAll("&", "&amp;").replaceAll("<
 const truncate = (value, length) => value?.length > length ? `${value.slice(0, length - 1)}…` : (value || "");
 const date = (value) => new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value)).toUpperCase();
 const colors = ["#3157FF", "#18A999", "#FFCA3A", "#FF6B35", "#8B5CF6", "#93A1B5"];
+const languageColors = {
+  "Assembly": "#6E4C13", "C": "#555555", "C#": "#7355DD", "C++": "#F34B7D", "CSS": "#663399",
+  "Dart": "#00B4AB", "Dockerfile": "#384D54", "Go": "#00ADD8", "HCL": "#844FBA", "HTML": "#E34C26",
+  "Java": "#B07219", "JavaScript": "#F1E05A", "Julia": "#A270BA", "Kotlin": "#A97BFF", "Lua": "#000080",
+  "Objective-C": "#438EFF", "PHP": "#4F5D95", "PowerShell": "#012456", "Python": "#3572A5", "R": "#198CE7",
+  "Ruby": "#701516", "Rust": "#DEA584", "Scala": "#C22D40", "Shell": "#89E051", "Svelte": "#FF3E00",
+  "Swift": "#F05138", "TeX": "#3D6117", "TypeScript": "#3178C6", "Vue": "#41B883", "WebAssembly": "#04133B",
+};
 const portrait = (await readFile("assets/abhishek-panda.jpg")).toString("base64");
 
 const career = [
@@ -134,21 +142,26 @@ repos.forEach((repo) => {
   });
 });
 
-const languageBar = (() => {
+const languagePlot = (() => {
   if (!languageTotal) return `<rect x="42" y="908" width="1116" height="14" fill="#E3E5E8"/><text x="42" y="950" class="small muted">LANGUAGE DATA APPEARS AS PUBLIC CODE IS ADDED</text>`;
   let x = 42;
-  const bars = topLanguages.map(([name, bytes], index) => {
+  const bars = sortedLanguages.map(([name, bytes], index) => {
     const width = 1116 * bytes / languageTotal;
-    const segment = `<rect x="${x.toFixed(1)}" y="908" width="${Math.max(width, 2).toFixed(1)}" height="14" fill="${colors[index]}"/>`;
+    const color = languageColors[name] || colors[index % colors.length];
+    const percentage = bytes / languageTotal * 100;
+    const segment = `<rect x="${x.toFixed(1)}" y="906" width="${Math.max(width, 1.5).toFixed(1)}" height="18" fill="${color}"><title>${xml(name)} · ${percentage.toFixed(2)}%</title></rect>`;
     x += width;
     return segment;
   }).join("");
-  const labels = topLanguages.map(([name, bytes], index) => {
+  const labels = sortedLanguages.map(([name, bytes], index) => {
     const xPos = 42 + (index % 3) * 370;
     const yPos = 951 + Math.floor(index / 3) * 30;
-    return `<circle cx="${xPos + 5}" cy="${yPos - 5}" r="5" fill="${colors[index]}"/><text x="${xPos + 18}" y="${yPos}" class="small ink">${xml(name)} ${(bytes / languageTotal * 100).toFixed(1)}%</text>`;
+    const color = languageColors[name] || colors[index % colors.length];
+    const percentage = bytes / languageTotal * 100;
+    const displayPercentage = percentage < 0.1 ? "&lt;0.1" : percentage.toFixed(1);
+    return `<circle cx="${xPos + 6}" cy="${yPos - 5}" r="6" fill="${color}"/><text x="${xPos + 20}" y="${yPos}" class="small ink">${xml(name)} ${displayPercentage}%</text>`;
   }).join("");
-  return bars + labels;
+  return `<rect x="42" y="906" width="1116" height="18" rx="9" fill="#DDE3F2"/><g clip-path="url(#languageBarClip)">${bars}</g>${labels}`;
 })();
 
 const activityBars = eventCounts.map((count, index) => {
@@ -157,7 +170,10 @@ const activityBars = eventCounts.map((count, index) => {
 }).join("");
 
 const repoRowCount = Math.max(1, featured.length);
-const repoStart = 1092;
+const languageRows = Math.max(1, Math.ceil(sortedLanguages.length / 3));
+const languageExtraHeight = Math.max(0, languageRows - 2) * 30;
+const repoTitleY = 1042 + languageExtraHeight;
+const repoStart = 1092 + languageExtraHeight;
 const careerTitleY = repoStart + repoRowCount * 126 + 18;
 const careerStart = careerTitleY + 46;
 const careerRowHeight = 132;
@@ -262,6 +278,7 @@ const svg = `<svg width="1200" height="${height}" viewBox="0 0 1200 ${height}" x
 <defs>
   <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#3157FF" opacity=".10"/></pattern>
   <clipPath id="portrait"><circle cx="1052" cy="146" r="91"/></clipPath>
+  <clipPath id="languageBarClip"><rect x="42" y="906" width="1116" height="18" rx="9"/></clipPath>
   <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F8FAFF"/><stop offset=".46" stop-color="#F3F0FF"/><stop offset="1" stop-color="#EDF9F6"/></linearGradient>
   <linearGradient id="clayCard" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFFFFF" stop-opacity=".94"/><stop offset="1" stop-color="#E8ECFF" stop-opacity=".82"/></linearGradient>
   <filter id="clay" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#6478C8" flood-opacity=".18"/><feDropShadow dx="-4" dy="-4" stdDeviation="6" flood-color="#FFFFFF" flood-opacity=".95"/></filter>
@@ -293,8 +310,8 @@ const svg = `<svg width="1200" height="${height}" viewBox="0 0 1200 ${height}" x
  <text y="172" class="repo ink">CLOUD PLATFORMS</text><text y="200" class="small muted">EVENT-DRIVEN SERVICES · APIs · DEVSECOPS · RESILIENCE</text>
 </g>
 <text x="780" y="580" class="label ink">PUBLIC ACTIVITY / 12 WEEKS</text><text x="1158" y="580" text-anchor="end" class="small blue">${activityStreak} WEEK STREAK</text><path d="M780 598H1158" stroke="#152033" stroke-opacity=".22"/>${activityBars}<path d="M780 744H1158" stroke="#152033" stroke-opacity=".25"/>
-<text x="42" y="866" class="label blue">LANGUAGE DISTRIBUTION / PUBLIC SOURCE</text><text x="1158" y="866" text-anchor="end" class="small muted">TOP ${topLanguages.length || 0} BY CODE SIZE</text><path d="M42 883H1158" stroke="#152033" stroke-opacity=".22"/>${languageBar}
-<text x="42" y="1042" class="label blue">LATEST PUBLIC ENGINEERING</text><text x="1158" y="1042" text-anchor="end" class="small muted">AUTO-SYNCED BY MOST RECENT PUSH</text><path d="M42 1060H1158" stroke="#152033" stroke-opacity=".22"/>
+<text x="42" y="866" class="label blue">LANGUAGE COMPOSITION / PUBLIC SOURCE</text><text x="1158" y="866" text-anchor="end" class="small muted">ALL ${sortedLanguages.length || 0} LANGUAGES · PROPORTIONAL CODE SIZE</text><path d="M42 883H1158" stroke="#152033" stroke-opacity=".22"/>${languagePlot}
+<text x="42" y="${repoTitleY}" class="label blue">LATEST PUBLIC ENGINEERING</text><text x="1158" y="${repoTitleY}" text-anchor="end" class="small muted">AUTO-SYNCED BY MOST RECENT PUSH</text><path d="M42 ${repoTitleY + 18}H1158" stroke="#152033" stroke-opacity=".22"/>
 ${repoCards}
 <text x="42" y="${careerTitleY}" class="label blue">CAREER SYSTEMS / JUL 2015 - PRESENT</text><text x="1158" y="${careerTitleY}" text-anchor="end" class="small muted">EMPLOYER FIRST · CLIENT CONTEXT ON RIGHT</text><path d="M42 ${careerTitleY + 17}H1158" stroke="#152033" stroke-opacity=".22"/>
 ${careerTimeline}
@@ -311,4 +328,4 @@ ${technologyBars}
 
 await mkdir("assets", { recursive: true });
 await writeFile("assets/abhishek-panda-portfolio.svg", svg);
-console.log(`Generated portfolio for @${username}: ${repos.length} repos, ${totalStars} stars, ${topLanguages.length} languages, ${usedTechnologies.length} detected technologies.`);
+console.log(`Generated portfolio for @${username}: ${repos.length} repos, ${totalStars} stars, ${sortedLanguages.length} languages, ${usedTechnologies.length} detected technologies.`);
