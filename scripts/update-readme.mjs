@@ -33,9 +33,9 @@ const repos = allRepos
   .filter((repo) => !repo.fork && !repo.archived && repo.name !== profileRepo)
   .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
 const featured = repos.slice(0, 5);
-const languageRepos = repos.slice(0, 20);
+const languageRepos = repos;
 const languageResults = await Promise.all(languageRepos.map((repo) => get(`/repos/${username}/${repo.name}/languages`).catch(() => ({}))));
-const repositoryTrees = await Promise.all(repos.slice(0, 12).map(async (repo) => {
+const repositoryTrees = await Promise.all(repos.map(async (repo) => {
   const tree = await get(`/repos/${username}/${repo.name}/git/trees/${encodeURIComponent(repo.default_branch)}?recursive=1`).catch(() => ({ tree: [] }));
   return [repo.name, (tree.tree || []).filter((item) => item.type === "blob").map((item) => item.path).join(" ").toLowerCase()];
 }));
@@ -164,9 +164,15 @@ const careerRowHeight = 132;
 const techTitleY = careerStart + career.length * careerRowHeight + 70;
 const techGridStart = techTitleY + 47;
 const skillsStart = techGridStart + 6 * 70 + 20;
-const heatTitleY = skillsStart + 6 * 48 + 20;
-const heatStart = heatTitleY + 52;
-const educationY = heatStart + 3 * 78 + 80;
+const usageTitleY = skillsStart + 6 * 48 + 20;
+const usageStart = usageTitleY + 48;
+const usedTechnologies = techCatalog
+  .map(([name, , , brandColor]) => ({ name, brandColor, score: evidence.get(name) || 0, icon: iconData.get(name) }))
+  .filter(({ score, icon }) => score > 0 && icon)
+  .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+const usageColumns = 2;
+const usageRows = Math.max(1, Math.ceil(usedTechnologies.length / usageColumns));
+const educationY = usageStart + usageRows * 64 + 64;
 const height = educationY + 110;
 
 const repoCards = (featured.length ? featured : [{ name: "NO PUBLIC BUILDS YET", description: "This panel will expand automatically when the first public repository is pushed.", language: "READY TO DISCOVER", stargazers_count: 0, forks_count: 0, pushed_at: null }])
@@ -233,15 +239,21 @@ const skillLines = [
   return `<g transform="translate(42 ${skillsStart + index * 48})"><text class="small blue">${label}</text><text x="190" class="micro ink">${first}</text>${second ? `<text x="190" y="19" class="micro ink">${second}</text>` : ""}</g>`;
 }).join("");
 
-const maxEvidence = Math.max(1, ...evidence.values());
-const heatmap = techCatalog.map(([name, , , brandColor], index) => {
-  const col = index % 10;
-  const row = Math.floor(index / 10);
-  const x = 42 + col * 112;
-  const y = heatStart + row * 78;
-  const score = evidence.get(name) || 0;
-  const opacity = score ? 0.25 + 0.75 * score / maxEvidence : 0.06;
-  return `<g transform="translate(${x} ${y})"><rect width="98" height="48" rx="12" fill="#${brandColor}" fill-opacity="${opacity.toFixed(2)}" stroke="#${brandColor}" stroke-opacity=".48" filter="url(#soft)">${score ? `<animate attributeName="fill-opacity" values="${Math.max(.2, opacity - .18).toFixed(2)};${opacity.toFixed(2)};${Math.max(.2, opacity - .18).toFixed(2)}" dur="4s" begin="${index * .07}s" repeatCount="indefinite"/>` : ""}</rect><text x="49" y="22" text-anchor="middle" class="micro ${score ? "ink" : "muted"}">${xml(truncate(name.toUpperCase(), 13))}</text><text x="49" y="38" text-anchor="middle" class="micro muted">${score} REPOS</text></g>`;
+const maxEvidence = Math.max(1, ...usedTechnologies.map(({ score }) => score));
+const technologyBars = usedTechnologies.map(({ name, brandColor, score, icon }, index) => {
+  const col = index % usageColumns;
+  const row = Math.floor(index / usageColumns);
+  const x = 42 + col * 568;
+  const y = usageStart + row * 64;
+  const barWidth = Math.max(18, 432 * score / maxEvidence);
+  return `<g transform="translate(${x} ${y})">
+    <title>${xml(name)} · ${score} public ${score === 1 ? "repository" : "repositories"}</title>
+    <rect width="48" height="48" rx="14" fill="url(#clayCard)" filter="url(#soft)"/>
+    <image href="data:image/svg+xml;base64,${icon}" x="9" y="9" width="30" height="30" preserveAspectRatio="xMidYMid meet"/>
+    <rect x="62" y="14" width="432" height="20" rx="10" fill="#DDE3F2"/>
+    <rect x="62" y="14" width="${barWidth.toFixed(1)}" height="20" rx="10" fill="#${brandColor}" fill-opacity=".88"><animate attributeName="width" from="0" to="${barWidth.toFixed(1)}" dur=".8s" begin="${index * .05}s" fill="freeze"/></rect>
+    <text x="536" y="31" text-anchor="end" class="small ink">${score}</text>
+  </g>`;
 }).join("");
 
 const svg = `<svg width="1200" height="${height}" viewBox="0 0 1200 ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
@@ -289,8 +301,8 @@ ${careerTimeline}
 <text x="42" y="${techTitleY}" class="label blue">TECHNOLOGY INVENTORY / VERIFIED FROM CV</text><text x="1158" y="${techTitleY}" text-anchor="end" class="small muted">OFFICIAL BRAND MARKS + COLORS</text><path d="M42 ${techTitleY + 17}H1158" stroke="#152033" stroke-opacity=".22"/>
 ${techGrid}
 ${skillLines}
-<text x="42" y="${heatTitleY}" class="label blue">REPOSITORY TECHNOLOGY HEATMAP</text><text x="1158" y="${heatTitleY}" text-anchor="end" class="small muted">DYNAMIC EVIDENCE FROM LANGUAGES · FILES · TOPICS</text><path d="M42 ${heatTitleY + 17}H1158" stroke="#152033" stroke-opacity=".22"/>
-${heatmap}
+<text x="42" y="${usageTitleY}" class="label blue">PUBLIC REPOSITORY TECHNOLOGY USAGE</text><text x="1158" y="${usageTitleY}" text-anchor="end" class="small muted">COUNT = REPOSITORIES WITH DETECTED USAGE</text><path d="M42 ${usageTitleY + 17}H1158" stroke="#152033" stroke-opacity=".22"/>
+${technologyBars}
 <text x="42" y="${educationY}" class="small ink">EDUCATION  ·  B.TECH COMPUTER SCIENCE &amp; ENGINEERING  ·  BPUT  ·  2010 - 2014</text>
 <text x="42" y="${educationY + 30}" class="small ink">CERTIFICATIONS  ·  AZ-305 AZURE SOLUTIONS ARCHITECT EXPERT  ·  AI-103 AZURE AI APPS &amp; AGENTS DEVELOPER</text>
 <path d="M42 ${educationY + 50}H1158" stroke="#152033" stroke-opacity=".45"/><text x="42" y="${educationY + 72}" class="micro blue">ARCHITECT FOR CHANGE · INSTRUMENT WHAT MATTERS · AUTOMATE THE REPEATABLE</text><text x="1158" y="${educationY + 72}" text-anchor="end" class="micro muted">REFRESHED ${date(new Date())}</text>
@@ -299,4 +311,4 @@ ${heatmap}
 
 await mkdir("assets", { recursive: true });
 await writeFile("assets/abhishek-panda-portfolio.svg", svg);
-console.log(`Generated portfolio for @${username}: ${repos.length} repos, ${totalStars} stars, ${topLanguages.length} languages.`);
+console.log(`Generated portfolio for @${username}: ${repos.length} repos, ${totalStars} stars, ${topLanguages.length} languages, ${usedTechnologies.length} detected technologies.`);
